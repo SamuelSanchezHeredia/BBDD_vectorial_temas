@@ -2,8 +2,6 @@
 
 Base de datos vectorial con **Pinecone** y **HuggingFace** que almacena el contenido del archivo `Saberes_2ESO.pdf` y permite hacer consultas por similitud semántica.
 
-> Sin LangChain ni OpenAI. Los embeddings se generan en local con `sentence-transformers`.
-
 ---
 
 ## 🧰 Tecnologías
