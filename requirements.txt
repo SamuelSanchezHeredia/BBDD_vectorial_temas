@@ -1,0 +1,6 @@
+pinecone>=5.0
+pymupdf
+sentence-transformers
+python-dotenv
+
+

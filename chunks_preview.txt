@@ -1,0 +1,32 @@
+Total chunks: 10
+Secciones (10): Educación Física, Física y Química, Geografía e Historia, Inglés, Lengua Castellana y Literatura, Matemáticas, Música, Segunda Lengua Extranjera (Francés), Tecnología y Digitalización, Valores Cívicos y Éticos
+
+--- Chunk 1 | Seccion: Lengua Castellana y Literatura | Pag: 1 | 498 chars ---
+1.º trimestre Observación de la propia biografía lingüística y diversidad lingüística del centro. Estrategias básicas de comprensión oral y escrita. Recursos de coherencia y cohesión. Introducción a la corrección ortográfica. Itinerarios de lectura. 2.º trimestre Producción de textos dialogados y expositivos. Recursos textuales y metalenguaje literario. Lectura y comentario de obras del patrimonio. 3.º trimestre Producción escrita avanzada. Análisis crítico del discurso. Proyecto lector final.
+
+--- Chunk 2 | Seccion: Matemáticas | Pag: 1 | 209 chars ---
+1.º trimestre Números, operaciones, proporciones y geometría básica. 2.º trimestre Álgebra elemental, áreas, volúmenes y transformaciones. 3.º trimestre Funciones, estadística básica y resolución de problemas.
+
+--- Chunk 3 | Seccion: Geografía e Historia | Pag: 1 | 146 chars ---
+1.º trimestre Métodos históricos y primeras civilizaciones. 2.º trimestre Sociedades antiguas y medievales. Demografía y territorio. 3.º trimestre
+
+--- Chunk 4 | Seccion: Física y Química | Pag: 2 | 145 chars ---
+1.º trimestre Método científico y materia. 2.º trimestre Átomo, energía y laboratorio. 3.º trimestre Fuerzas, reacciones y proyecto experimental.
+
+--- Chunk 5 | Seccion: Educación Física | Pag: 2 | 143 chars ---
+1.º trimestre Salud, coordinación y seguridad. 2.º trimestre Planificación física y deportes. 3.º trimestre Expresión corporal y medio natural.
+
+--- Chunk 6 | Seccion: Música | Pag: 2 | 124 chars ---
+1.º trimestre Escucha activa y ritmo. 2.º trimestre Interpretación y creación digital. 3.º trimestre Proyecto musical final.
+
+--- Chunk 7 | Seccion: Inglés | Pag: 2 | 143 chars ---
+1.º trimestre Comunicación básica y vocabulario. 2.º trimestre Narración y producción escrita. 3.º trimestre Proyecto oral e interculturalidad.
+
+--- Chunk 8 | Seccion: Tecnología y Digitalización | Pag: 3 | 153 chars ---
+1.º trimestre Resolución de problemas técnicos. 2.º trimestre CAD, electricidad y algoritmos. 3.º trimestre Robótica, seguridad digital y proyecto final.
+
+--- Chunk 9 | Seccion: Valores Cívicos y Éticos | Pag: 3 | 133 chars ---
+1.º trimestre Identidad y convivencia. 2.º trimestre Derechos humanos y democracia. 3.º trimestre Sostenibilidad y proyectos cívicos.
+
+--- Chunk 10 | Seccion: Segunda Lengua Extranjera (Francés) | Pag: 3 | 121 chars ---
+1.º trimestre Comunicación básica. 2.º trimestre Producción oral y escrita. 3.º trimestre Interculturalidad y evaluación.
