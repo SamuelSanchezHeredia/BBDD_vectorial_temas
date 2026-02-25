@@ -33,7 +33,7 @@ INDEX_NAME = "saberes-2eso"
 EMBEDDING_MODEL = "paraphrase-multilingual-MiniLM-L12-v2"  # 384 dims, multilingüe (español)
 EMBEDDING_DIM = 384
 MAX_CHUNK_CHARS = 800   # máximo de caracteres por chunk
-MIN_CHUNK_CHARS = 60    # descartar chunks demasiado pequeños (ruido)
+MIN_CHUNK_CHARS = 20    # descartar chunks demasiado pequeños (ruido)
 PDF_PATH = os.path.join(os.path.dirname(__file__), "Saberes_2ESO.pdf")
 FAISS_DIR = os.path.join(os.path.dirname(__file__), "faiss_index")
 FAISS_INDEX_PATH = os.path.join(FAISS_DIR, "index.faiss")
@@ -90,6 +90,54 @@ def is_heading(line: str) -> bool:
     return False
 
 
+def detect_trimester(text: str) -> str | None:
+    """
+    Detecta si el texto EMPIEZA con una marca de trimestre (p.ej. '1.º trimestre').
+    Retorna '1.º trimestre', '2.º trimestre', '3.º trimestre' o None.
+    """
+    m = re.match(r"^\s*(\d)\.?[°ºo]?\s*trimestre\b", text, re.IGNORECASE)
+    if m:
+        n = m.group(1)
+        return f"{n}.º trimestre"
+    return None
+
+
+def split_by_trimesters(text: str) -> list[tuple[str, str]]:
+    """
+    Divide un texto que contiene marcas de trimestre inline en fragmentos.
+    Retorna lista de tuplas (nombre_trimestre, contenido).
+    Si no hay marcas de trimestre, retorna [("General", texto_completo)].
+    Ejemplo:
+      '1.º trimestre Números ... 2.º trimestre Álgebra ...'
+      → [('1.º trimestre', 'Números ...'), ('2.º trimestre', 'Álgebra ...')]
+    """
+    # Patrón que captura las marcas de trimestre inline
+    pattern = r"(\d\.?[°ºo]?\s*trimestre)\s*"
+    parts = re.split(pattern, text, flags=re.IGNORECASE)
+    # parts alterna: [texto_antes, marca1, texto1, marca2, texto2, ...]
+
+    if len(parts) <= 1:
+        # Sin marcas de trimestre
+        return [("General", text.strip())]
+
+    result = []
+    # Si hay texto antes de la primera marca, se asigna como "General"
+    pre_text = parts[0].strip()
+    if pre_text:
+        result.append(("General", pre_text))
+
+    # Recorrer pares (marca, contenido)
+    for i in range(1, len(parts), 2):
+        raw_marker = parts[i].strip()
+        content = parts[i + 1].strip() if i + 1 < len(parts) else ""
+        # Normalizar nombre del trimestre
+        m = re.match(r"(\d)", raw_marker)
+        trimester_name = f"{m.group(1)}.º trimestre" if m else raw_marker
+        result.append((trimester_name, content))
+
+    return result
+
+
 def split_by_sentences(text: str, max_chars: int) -> list[str]:
     """
     Divide un texto largo en fragmentos respetando oraciones completas.
@@ -115,21 +163,73 @@ def split_by_sentences(text: str, max_chars: int) -> list[str]:
 
 def split_into_chunks(pages: list[dict]) -> list[dict]:
     """
-    Chunking semántico en 3 niveles:
-      1. Detecta encabezados → marca inicio de nueva sección.
-      2. Agrupa párrafos de la misma sección hasta MAX_CHUNK_CHARS.
-      3. Si un párrafo solo ya supera MAX_CHUNK_CHARS, lo divide por oraciones.
-    Cada chunk incluye: texto, página, sección (asignatura/trimestre).
+    Chunking semántico en 4 niveles:
+      1. Detecta encabezados → marca inicio de nueva sección (asignatura).
+      2. Detecta marcas de trimestre (inline o al inicio) → chunk por trimestre.
+      3. Agrupa párrafos del mismo trimestre/sección hasta MAX_CHUNK_CHARS.
+      4. Si un párrafo supera MAX_CHUNK_CHARS, lo divide por oraciones.
+    Cada chunk incluye: texto, página, sección, trimestre.
     """
     chunks = []
 
-    def flush_chunk(text: str, section: str, page: int):
+    def flush_chunk(text: str, section: str, trimester: str, page: int):
         """Añade el chunk a la lista si supera el mínimo de caracteres."""
         text = text.strip()
         if len(text) >= MIN_CHUNK_CHARS:
-            chunks.append({"text": text, "section": section, "page": page})
+            # Prefijar contexto de sección/trimestre para mejor embedding
+            prefix = f"[{section}]" if section != "General" else ""
+            if trimester != "General":
+                prefix += f" [{trimester}]" if prefix else f"[{trimester}]"
+            enriched_text = f"{prefix} {text}".strip() if prefix else text
+            chunks.append({
+                "text": enriched_text,
+                "section": section,
+                "trimester": trimester,
+                "page": page,
+            })
+
+    def process_paragraph(para: str, section: str, trimester: str, page: int,
+                          current_chunk: str) -> tuple[str, str]:
+        """
+        Procesa un párrafo: si contiene marcas de trimestre inline, divide
+        y emite chunks separados. Retorna (chunk_acumulado, trimestre_actual).
+        """
+        tri_parts = split_by_trimesters(para)
+
+        # Si no hay trimestres, el párrafo es texto normal
+        if len(tri_parts) == 1 and tri_parts[0][0] == "General":
+            text = tri_parts[0][1]
+            if len(current_chunk) + len(text) + 2 <= MAX_CHUNK_CHARS:
+                current_chunk = (current_chunk + "\n\n" + text).strip()
+            else:
+                flush_chunk(current_chunk, section, trimester, page)
+                if len(text) > MAX_CHUNK_CHARS:
+                    for frag in split_by_sentences(text, MAX_CHUNK_CHARS):
+                        flush_chunk(frag, section, trimester, page)
+                    current_chunk = ""
+                else:
+                    current_chunk = text
+            return current_chunk, trimester
+
+        # Hay marcas de trimestre: flush lo acumulado y emitir un chunk por trimestre
+        flush_chunk(current_chunk, section, trimester, page)
+        current_chunk = ""
+        last_tri = trimester
+
+        for tri_name, tri_content in tri_parts:
+            if tri_name != "General":
+                last_tri = tri_name
+            if tri_content:
+                if len(tri_content) > MAX_CHUNK_CHARS:
+                    for frag in split_by_sentences(tri_content, MAX_CHUNK_CHARS):
+                        flush_chunk(frag, section, last_tri, page)
+                else:
+                    flush_chunk(tri_content, section, last_tri, page)
+
+        return "", last_tri
 
     current_section = "General"
+    current_trimester = "General"
     current_chunk = ""
     current_page = 1
 
@@ -146,18 +246,10 @@ def split_into_chunks(pages: list[dict]) -> list[dict]:
                 if paragraph_buffer.strip():
                     para = paragraph_buffer.strip()
                     paragraph_buffer = ""
-                    if len(current_chunk) + len(para) + 2 <= MAX_CHUNK_CHARS:
-                        current_chunk = (current_chunk + "\n\n" + para).strip()
-                        current_page = page_num
-                    else:
-                        flush_chunk(current_chunk, current_section, current_page)
-                        if len(para) > MAX_CHUNK_CHARS:
-                            for frag in split_by_sentences(para, MAX_CHUNK_CHARS):
-                                flush_chunk(frag, current_section, page_num)
-                            current_chunk = ""
-                        else:
-                            current_chunk = para
-                        current_page = page_num
+                    current_chunk, current_trimester = process_paragraph(
+                        para, current_section, current_trimester, page_num, current_chunk
+                    )
+                    current_page = page_num
                 continue
 
             if is_heading(stripped):
@@ -165,10 +257,13 @@ def split_into_chunks(pages: list[dict]) -> list[dict]:
                 if paragraph_buffer.strip():
                     para = paragraph_buffer.strip()
                     paragraph_buffer = ""
-                    current_chunk = (current_chunk + "\n\n" + para).strip() if current_chunk else para
-                flush_chunk(current_chunk, current_section, current_page)
+                    current_chunk, current_trimester = process_paragraph(
+                        para, current_section, current_trimester, page_num, current_chunk
+                    )
+                flush_chunk(current_chunk, current_section, current_trimester, current_page)
                 current_chunk = ""
                 current_section = stripped
+                current_trimester = "General"
                 current_page = page_num
             else:
                 paragraph_buffer = (paragraph_buffer + " " + stripped).strip()
@@ -176,20 +271,13 @@ def split_into_chunks(pages: list[dict]) -> list[dict]:
         # Al acabar la página, volcar el buffer restante
         if paragraph_buffer.strip():
             para = paragraph_buffer.strip()
-            if len(current_chunk) + len(para) + 2 <= MAX_CHUNK_CHARS:
-                current_chunk = (current_chunk + "\n\n" + para).strip()
-            else:
-                flush_chunk(current_chunk, current_section, current_page)
-                if len(para) > MAX_CHUNK_CHARS:
-                    for frag in split_by_sentences(para, MAX_CHUNK_CHARS):
-                        flush_chunk(frag, current_section, page_num)
-                    current_chunk = ""
-                else:
-                    current_chunk = para
+            current_chunk, current_trimester = process_paragraph(
+                para, current_section, current_trimester, page_num, current_chunk
+            )
             current_page = page_num
 
     # Volcar el último chunk pendiente
-    flush_chunk(current_chunk, current_section, current_page)
+    flush_chunk(current_chunk, current_section, current_trimester, current_page)
 
     return chunks
 
@@ -209,7 +297,7 @@ def save_faiss_index(embeddings: np.ndarray, chunks: list[dict]) -> None:
     index.add(vectors)
     faiss.write_index(index, FAISS_INDEX_PATH)
 
-    # Guardar metadatos (texto, página, sección) indexados por posición
+    # Guardar metadatos (texto, página, sección, trimestre) indexados por posición
     metadata = []
     for i, chunk in enumerate(chunks):
         metadata.append({
@@ -217,6 +305,7 @@ def save_faiss_index(embeddings: np.ndarray, chunks: list[dict]) -> None:
             "text": chunk["text"],
             "page": chunk["page"],
             "section": chunk["section"],
+            "trimester": chunk.get("trimester", "General"),
         })
     with open(FAISS_METADATA_PATH, "w", encoding="utf-8") as f:
         json.dump(metadata, f, ensure_ascii=False, indent=2)
@@ -264,6 +353,7 @@ def query_faiss(question: str, top_k: int = 5):
                 "text": meta["text"],
                 "page": meta["page"],
                 "section": meta["section"],
+                "trimester": meta.get("trimester", "General"),
             },
         })
     return results
@@ -310,6 +400,7 @@ def sync():
             "text": vec_data.metadata.get("text", ""),
             "page": vec_data.metadata.get("page", 0),
             "section": vec_data.metadata.get("section", ""),
+            "trimester": vec_data.metadata.get("trimester", "General"),
         })
 
     embeddings_np = np.array(embeddings, dtype="float32")
@@ -382,9 +473,10 @@ def ingest():
         for j in range(i, min(i + batch_size, len(chunks))):
             vector_id = f"chunk-{j}"
             metadata = {
-                "text":    chunks[j]["text"],
-                "page":    chunks[j]["page"],
-                "section": chunks[j]["section"],
+                "text":      chunks[j]["text"],
+                "page":      chunks[j]["page"],
+                "section":   chunks[j]["section"],
+                "trimester": chunks[j].get("trimester", "General"),
             }
             batch.append((vector_id, embeddings[j].tolist(), metadata))
         index.upsert(vectors=batch)
@@ -419,11 +511,12 @@ def query(question: str, top_k: int = 5, engine: str = "auto"):
             print(f"⚡ Motor: FAISS (local)")
             print(f"📊 Top {top_k} resultados:\n")
             for i, match in enumerate(faiss_results, 1):
-                score   = match["score"]
-                text    = match["metadata"]["text"]
-                page    = match["metadata"]["page"]
-                section = match["metadata"].get("section", "—")
-                print(f"  [{i}] (similitud: {score:.4f}) — {section} | Página {page}")
+                score     = match["score"]
+                text      = match["metadata"]["text"]
+                page      = match["metadata"]["page"]
+                section   = match["metadata"].get("section", "—")
+                trimester = match["metadata"].get("trimester", "—")
+                print(f"  [{i}] (similitud: {score:.4f}) — {section} | {trimester} | Página {page}")
                 print(f"      {text[:300]}...")
                 print()
             return faiss_results
@@ -447,11 +540,12 @@ def query(question: str, top_k: int = 5, engine: str = "auto"):
     print(f"🌲 Motor: Pinecone (cloud)")
     print(f"📊 Top {top_k} resultados:\n")
     for i, match in enumerate(results["matches"], 1):
-        score   = match["score"]
-        text    = match["metadata"]["text"]
-        page    = match["metadata"]["page"]
-        section = match["metadata"].get("section", "—")
-        print(f"  [{i}] (similitud: {score:.4f}) — {section} | Página {page}")
+        score     = match["score"]
+        text      = match["metadata"]["text"]
+        page      = match["metadata"]["page"]
+        section   = match["metadata"].get("section", "—")
+        trimester = match["metadata"].get("trimester", "—")
+        print(f"  [{i}] (similitud: {score:.4f}) — {section} | {trimester} | Página {page}")
         print(f"      {text[:300]}...")
         print()
 

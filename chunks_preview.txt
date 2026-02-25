@@ -1,32 +1,90 @@
-Total chunks: 10
+Total chunks: 29
 Secciones (10): Educación Física, Física y Química, Geografía e Historia, Inglés, Lengua Castellana y Literatura, Matemáticas, Música, Segunda Lengua Extranjera (Francés), Tecnología y Digitalización, Valores Cívicos y Éticos
+Trimestres (3): 1.º trimestre, 2.º trimestre, 3.º trimestre
 
---- Chunk 1 | Seccion: Lengua Castellana y Literatura | Pag: 1 | 498 chars ---
-1.º trimestre Observación de la propia biografía lingüística y diversidad lingüística del centro. Estrategias básicas de comprensión oral y escrita. Recursos de coherencia y cohesión. Introducción a la corrección ortográfica. Itinerarios de lectura. 2.º trimestre Producción de textos dialogados y expositivos. Recursos textuales y metalenguaje literario. Lectura y comentario de obras del patrimonio. 3.º trimestre Producción escrita avanzada. Análisis crítico del discurso. Proyecto lector final.
+--- Chunk 1 | Seccion: Lengua Castellana y Literatura | Trimestre: 1.º trimestre | Pag: 1 | 284 chars ---
+[Lengua Castellana y Literatura] [1.º trimestre] Observación de la propia biografía lingüística y diversidad lingüística del centro. Estrategias básicas de comprensión oral y escrita. Recursos de coherencia y cohesión. Introducción a la corrección ortográfica. Itinerarios de lectura.
 
---- Chunk 2 | Seccion: Matemáticas | Pag: 1 | 209 chars ---
-1.º trimestre Números, operaciones, proporciones y geometría básica. 2.º trimestre Álgebra elemental, áreas, volúmenes y transformaciones. 3.º trimestre Funciones, estadística básica y resolución de problemas.
+--- Chunk 2 | Seccion: Lengua Castellana y Literatura | Trimestre: 2.º trimestre | Pag: 1 | 186 chars ---
+[Lengua Castellana y Literatura] [2.º trimestre] Producción de textos dialogados y expositivos. Recursos textuales y metalenguaje literario. Lectura y comentario de obras del patrimonio.
 
---- Chunk 3 | Seccion: Geografía e Historia | Pag: 1 | 146 chars ---
-1.º trimestre Métodos históricos y primeras civilizaciones. 2.º trimestre Sociedades antiguas y medievales. Demografía y territorio. 3.º trimestre
+--- Chunk 3 | Seccion: Lengua Castellana y Literatura | Trimestre: 3.º trimestre | Pag: 1 | 131 chars ---
+[Lengua Castellana y Literatura] [3.º trimestre] Producción escrita avanzada. Análisis crítico del discurso. Proyecto lector final.
 
---- Chunk 4 | Seccion: Física y Química | Pag: 2 | 145 chars ---
-1.º trimestre Método científico y materia. 2.º trimestre Átomo, energía y laboratorio. 3.º trimestre Fuerzas, reacciones y proyecto experimental.
+--- Chunk 4 | Seccion: Matemáticas | Trimestre: 1.º trimestre | Pag: 1 | 84 chars ---
+[Matemáticas] [1.º trimestre] Números, operaciones, proporciones y geometría básica.
 
---- Chunk 5 | Seccion: Educación Física | Pag: 2 | 143 chars ---
-1.º trimestre Salud, coordinación y seguridad. 2.º trimestre Planificación física y deportes. 3.º trimestre Expresión corporal y medio natural.
+--- Chunk 5 | Seccion: Matemáticas | Trimestre: 2.º trimestre | Pag: 1 | 85 chars ---
+[Matemáticas] [2.º trimestre] Álgebra elemental, áreas, volúmenes y transformaciones.
 
---- Chunk 6 | Seccion: Música | Pag: 2 | 124 chars ---
-1.º trimestre Escucha activa y ritmo. 2.º trimestre Interpretación y creación digital. 3.º trimestre Proyecto musical final.
+--- Chunk 6 | Seccion: Matemáticas | Trimestre: 3.º trimestre | Pag: 1 | 86 chars ---
+[Matemáticas] [3.º trimestre] Funciones, estadística básica y resolución de problemas.
 
---- Chunk 7 | Seccion: Inglés | Pag: 2 | 143 chars ---
-1.º trimestre Comunicación básica y vocabulario. 2.º trimestre Narración y producción escrita. 3.º trimestre Proyecto oral e interculturalidad.
+--- Chunk 7 | Seccion: Geografía e Historia | Trimestre: 1.º trimestre | Pag: 1 | 84 chars ---
+[Geografía e Historia] [1.º trimestre] Métodos históricos y primeras civilizaciones.
 
---- Chunk 8 | Seccion: Tecnología y Digitalización | Pag: 3 | 153 chars ---
-1.º trimestre Resolución de problemas técnicos. 2.º trimestre CAD, electricidad y algoritmos. 3.º trimestre Robótica, seguridad digital y proyecto final.
+--- Chunk 8 | Seccion: Geografía e Historia | Trimestre: 2.º trimestre | Pag: 1 | 97 chars ---
+[Geografía e Historia] [2.º trimestre] Sociedades antiguas y medievales. Demografía y territorio.
 
---- Chunk 9 | Seccion: Valores Cívicos y Éticos | Pag: 3 | 133 chars ---
-1.º trimestre Identidad y convivencia. 2.º trimestre Derechos humanos y democracia. 3.º trimestre Sostenibilidad y proyectos cívicos.
+--- Chunk 9 | Seccion: Física y Química | Trimestre: 1.º trimestre | Pag: 2 | 63 chars ---
+[Física y Química] [1.º trimestre] Método científico y materia.
 
---- Chunk 10 | Seccion: Segunda Lengua Extranjera (Francés) | Pag: 3 | 121 chars ---
-1.º trimestre Comunicación básica. 2.º trimestre Producción oral y escrita. 3.º trimestre Interculturalidad y evaluación.
+--- Chunk 10 | Seccion: Física y Química | Trimestre: 2.º trimestre | Pag: 2 | 64 chars ---
+[Física y Química] [2.º trimestre] Átomo, energía y laboratorio.
+
+--- Chunk 11 | Seccion: Física y Química | Trimestre: 3.º trimestre | Pag: 2 | 79 chars ---
+[Física y Química] [3.º trimestre] Fuerzas, reacciones y proyecto experimental.
+
+--- Chunk 12 | Seccion: Educación Física | Trimestre: 1.º trimestre | Pag: 2 | 67 chars ---
+[Educación Física] [1.º trimestre] Salud, coordinación y seguridad.
+
+--- Chunk 13 | Seccion: Educación Física | Trimestre: 2.º trimestre | Pag: 2 | 67 chars ---
+[Educación Física] [2.º trimestre] Planificación física y deportes.
+
+--- Chunk 14 | Seccion: Educación Física | Trimestre: 3.º trimestre | Pag: 2 | 70 chars ---
+[Educación Física] [3.º trimestre] Expresión corporal y medio natural.
+
+--- Chunk 15 | Seccion: Música | Trimestre: 1.º trimestre | Pag: 2 | 48 chars ---
+[Música] [1.º trimestre] Escucha activa y ritmo.
+
+--- Chunk 16 | Seccion: Música | Trimestre: 2.º trimestre | Pag: 2 | 59 chars ---
+[Música] [2.º trimestre] Interpretación y creación digital.
+
+--- Chunk 17 | Seccion: Música | Trimestre: 3.º trimestre | Pag: 2 | 48 chars ---
+[Música] [3.º trimestre] Proyecto musical final.
+
+--- Chunk 18 | Seccion: Inglés | Trimestre: 1.º trimestre | Pag: 2 | 59 chars ---
+[Inglés] [1.º trimestre] Comunicación básica y vocabulario.
+
+--- Chunk 19 | Seccion: Inglés | Trimestre: 2.º trimestre | Pag: 2 | 56 chars ---
+[Inglés] [2.º trimestre] Narración y producción escrita.
+
+--- Chunk 20 | Seccion: Inglés | Trimestre: 3.º trimestre | Pag: 2 | 59 chars ---
+[Inglés] [3.º trimestre] Proyecto oral e interculturalidad.
+
+--- Chunk 21 | Seccion: Tecnología y Digitalización | Trimestre: 1.º trimestre | Pag: 3 | 79 chars ---
+[Tecnología y Digitalización] [1.º trimestre] Resolución de problemas técnicos.
+
+--- Chunk 22 | Seccion: Tecnología y Digitalización | Trimestre: 2.º trimestre | Pag: 3 | 77 chars ---
+[Tecnología y Digitalización] [2.º trimestre] CAD, electricidad y algoritmos.
+
+--- Chunk 23 | Seccion: Tecnología y Digitalización | Trimestre: 3.º trimestre | Pag: 3 | 91 chars ---
+[Tecnología y Digitalización] [3.º trimestre] Robótica, seguridad digital y proyecto final.
+
+--- Chunk 24 | Seccion: Valores Cívicos y Éticos | Trimestre: 1.º trimestre | Pag: 3 | 67 chars ---
+[Valores Cívicos y Éticos] [1.º trimestre] Identidad y convivencia.
+
+--- Chunk 25 | Seccion: Valores Cívicos y Éticos | Trimestre: 2.º trimestre | Pag: 3 | 73 chars ---
+[Valores Cívicos y Éticos] [2.º trimestre] Derechos humanos y democracia.
+
+--- Chunk 26 | Seccion: Valores Cívicos y Éticos | Trimestre: 3.º trimestre | Pag: 3 | 78 chars ---
+[Valores Cívicos y Éticos] [3.º trimestre] Sostenibilidad y proyectos cívicos.
+
+--- Chunk 27 | Seccion: Segunda Lengua Extranjera (Francés) | Trimestre: 1.º trimestre | Pag: 3 | 74 chars ---
+[Segunda Lengua Extranjera (Francés)] [1.º trimestre] Comunicación básica.
+
+--- Chunk 28 | Seccion: Segunda Lengua Extranjera (Francés) | Trimestre: 2.º trimestre | Pag: 3 | 80 chars ---
+[Segunda Lengua Extranjera (Francés)] [2.º trimestre] Producción oral y escrita.
+
+--- Chunk 29 | Seccion: Segunda Lengua Extranjera (Francés) | Trimestre: 3.º trimestre | Pag: 3 | 85 chars ---
+[Segunda Lengua Extranjera (Francés)] [3.º trimestre] Interculturalidad y evaluación.

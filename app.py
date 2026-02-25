@@ -67,6 +67,7 @@ def search(question: str, top_k: int = 5):
             "text": meta["text"],
             "page": meta["page"],
             "section": meta["section"],
+            "trimester": meta.get("trimester", "General"),
         })
     return results
 
@@ -145,6 +146,7 @@ if question:
             for i, result in enumerate(filtered, 1):
                 score = result["score"]
                 section = result["section"]
+                trimester = result.get("trimester", "General")
                 page = result["page"]
                 text = result["text"]
 
@@ -156,7 +158,7 @@ if question:
                 else:
                     color = "🔴"
 
-                header = f"{color} **{section}** — Página {page}"
+                header = f"{color} **{section}** — {trimester} — Página {page}"
                 if show_score:
                     header += f" — Similitud: `{score:.4f}`"
 
