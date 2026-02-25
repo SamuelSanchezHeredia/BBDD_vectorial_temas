@@ -1,0 +1,20 @@
+# Entorno virtual
+.venv/
+venv/
+
+# Variables de entorno
+.env
+
+# Índice FAISS local (se reconstruye con 'ingest' o 'sync')
+faiss_index/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+
+# IDE
+.idea/
+.vscode/
+*.swp
+

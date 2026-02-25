@@ -1,7 +1,11 @@
 """
-Base de datos vectorial con Pinecone + HuggingFace (sentence-transformers).
-Lee el PDF Saberes_2ESO.pdf, genera embeddings y los almacena en Pinecone.
-Permite hacer consultas por similitud semántica.
+Base de datos vectorial con Pinecone + FAISS + HuggingFace (sentence-transformers).
+Lee el PDF Saberes_2ESO.pdf, genera embeddings y los almacena en Pinecone (núcleo)
+y FAISS (motor de búsqueda local).
+
+Arquitectura híbrida:
+  - Pinecone: almacenamiento persistente y centralizado (fuente de verdad).
+  - FAISS: búsqueda local ultrarrápida y offline.
 
 Estrategia de chunking semántico:
   1. Detecta secciones por encabezados (asignaturas, trimestres, títulos).
@@ -14,7 +18,10 @@ import os
 import re
 import sys
 import time
+import json
 import fitz  # PyMuPDF
+import numpy as np
+import faiss
 from dotenv import load_dotenv
 from pinecone import Pinecone, ServerlessSpec
 from sentence_transformers import SentenceTransformer
@@ -28,6 +35,9 @@ EMBEDDING_DIM = 384
 MAX_CHUNK_CHARS = 800   # máximo de caracteres por chunk
 MIN_CHUNK_CHARS = 60    # descartar chunks demasiado pequeños (ruido)
 PDF_PATH = os.path.join(os.path.dirname(__file__), "Saberes_2ESO.pdf")
+FAISS_DIR = os.path.join(os.path.dirname(__file__), "faiss_index")
+FAISS_INDEX_PATH = os.path.join(FAISS_DIR, "index.faiss")
+FAISS_METADATA_PATH = os.path.join(FAISS_DIR, "metadata.json")
 
 
 # ──────────────────────────────────────────────
@@ -184,6 +194,129 @@ def split_into_chunks(pages: list[dict]) -> list[dict]:
     return chunks
 
 
+def save_faiss_index(embeddings: np.ndarray, chunks: list[dict]) -> None:
+    """
+    Construye un índice FAISS IndexFlatIP (producto interno ≈ coseno con
+    vectores normalizados) y lo guarda en disco junto con los metadatos.
+    """
+    os.makedirs(FAISS_DIR, exist_ok=True)
+
+    # Normalizar vectores para que el producto interno equivalga a similitud coseno
+    vectors = np.array(embeddings, dtype="float32")
+    faiss.normalize_L2(vectors)
+
+    index = faiss.IndexFlatIP(EMBEDDING_DIM)
+    index.add(vectors)
+    faiss.write_index(index, FAISS_INDEX_PATH)
+
+    # Guardar metadatos (texto, página, sección) indexados por posición
+    metadata = []
+    for i, chunk in enumerate(chunks):
+        metadata.append({
+            "id": f"chunk-{i}",
+            "text": chunk["text"],
+            "page": chunk["page"],
+            "section": chunk["section"],
+        })
+    with open(FAISS_METADATA_PATH, "w", encoding="utf-8") as f:
+        json.dump(metadata, f, ensure_ascii=False, indent=2)
+
+    print(f"   💾 Índice FAISS guardado en {FAISS_DIR}/ ({index.ntotal} vectores)")
+
+
+def load_faiss_index():
+    """
+    Carga el índice FAISS y los metadatos desde disco.
+    Retorna (index, metadata) o (None, None) si no existen los archivos.
+    """
+    if not os.path.exists(FAISS_INDEX_PATH) or not os.path.exists(FAISS_METADATA_PATH):
+        return None, None
+
+    index = faiss.read_index(FAISS_INDEX_PATH)
+    with open(FAISS_METADATA_PATH, "r", encoding="utf-8") as f:
+        metadata = json.load(f)
+
+    return index, metadata
+
+
+def query_faiss(question: str, top_k: int = 5):
+    """Busca en el índice FAISS local. Retorna resultados o None si no hay índice."""
+    index, metadata = load_faiss_index()
+    if index is None:
+        return None
+
+    model = SentenceTransformer(EMBEDDING_MODEL)
+    q_embedding = model.encode(question)
+    q_vector = np.array([q_embedding], dtype="float32")
+    faiss.normalize_L2(q_vector)
+
+    scores, indices = index.search(q_vector, min(top_k, index.ntotal))
+
+    results = []
+    for score, idx in zip(scores[0], indices[0]):
+        if idx == -1:
+            continue
+        meta = metadata[idx]
+        results.append({
+            "score": float(score),
+            "id": meta["id"],
+            "metadata": {
+                "text": meta["text"],
+                "page": meta["page"],
+                "section": meta["section"],
+            },
+        })
+    return results
+
+
+def sync():
+    """
+    Descarga todos los vectores de Pinecone y reconstruye el índice FAISS local.
+    Útil cuando Pinecone fue actualizado desde otro entorno.
+    """
+    api_key = load_env()
+
+    print("🌲 Conectando con Pinecone...")
+    pc = Pinecone(api_key=api_key)
+    index = pc.Index(INDEX_NAME)
+
+    # Obtener estadísticas del índice
+    stats = index.describe_index_stats()
+    total_vectors = stats.total_vector_count
+    if total_vectors == 0:
+        print("⚠️  El índice de Pinecone está vacío. Ejecuta 'ingest' primero.")
+        return
+
+    print(f"   → {total_vectors} vectores en Pinecone.")
+
+    # Descargar todos los vectores de Pinecone usando list + fetch
+    print("📥 Descargando vectores de Pinecone...")
+    all_ids = []
+    for ids_batch in index.list():
+        all_ids.extend(ids_batch)
+
+    fetched = index.fetch(ids=all_ids)
+    vectors_dict = fetched.vectors
+
+    # Ordenar por ID para mantener consistencia
+    sorted_ids = sorted(vectors_dict.keys(), key=lambda x: int(x.split("-")[1]))
+
+    embeddings = []
+    chunks = []
+    for vid in sorted_ids:
+        vec_data = vectors_dict[vid]
+        embeddings.append(vec_data.values)
+        chunks.append({
+            "text": vec_data.metadata.get("text", ""),
+            "page": vec_data.metadata.get("page", 0),
+            "section": vec_data.metadata.get("section", ""),
+        })
+
+    embeddings_np = np.array(embeddings, dtype="float32")
+    save_faiss_index(embeddings_np, chunks)
+    print(f"\n✅ Sincronización completada: {len(chunks)} vectores descargados y guardados en FAISS.")
+
+
 def create_or_get_index(pc: Pinecone) -> None:
     """Crea el índice en Pinecone si no existe y espera a que esté listo."""
     existing = [idx.name for idx in pc.list_indexes()]
@@ -257,16 +390,51 @@ def ingest():
         index.upsert(vectors=batch)
         print(f"   → Subidos {min(i + batch_size, len(chunks))}/{len(chunks)}")
 
-    print(f"\n✅ Ingesta completada: {len(chunks)} fragmentos en el índice '{INDEX_NAME}'.")
+    # 7. Guardar índice FAISS local
+    print(f"💾 Construyendo índice FAISS local...")
+    save_faiss_index(embeddings, chunks)
+
+    print(f"\n✅ Ingesta completada: {len(chunks)} fragmentos en el índice '{INDEX_NAME}' (Pinecone + FAISS local).")
 
 
 # ──────────────────────────────────────────────
 # Consulta
 # ──────────────────────────────────────────────
-def query(question: str, top_k: int = 5):
-    """Busca los fragmentos más relevantes para una pregunta."""
-    api_key = load_env()
+def query(question: str, top_k: int = 5, engine: str = "auto"):
+    """
+    Busca los fragmentos más relevantes para una pregunta.
 
+    Motores de búsqueda:
+      - 'faiss':    Búsqueda local con FAISS (rápida, offline).
+      - 'pinecone': Búsqueda en Pinecone (cloud).
+      - 'auto':     Intenta FAISS primero, fallback a Pinecone.
+    """
+    used_engine = engine
+
+    if engine in ("faiss", "auto"):
+        faiss_results = query_faiss(question, top_k)
+        if faiss_results is not None:
+            used_engine = "faiss"
+            print(f"\n🔎 Pregunta: {question}")
+            print(f"⚡ Motor: FAISS (local)")
+            print(f"📊 Top {top_k} resultados:\n")
+            for i, match in enumerate(faiss_results, 1):
+                score   = match["score"]
+                text    = match["metadata"]["text"]
+                page    = match["metadata"]["page"]
+                section = match["metadata"].get("section", "—")
+                print(f"  [{i}] (similitud: {score:.4f}) — {section} | Página {page}")
+                print(f"      {text[:300]}...")
+                print()
+            return faiss_results
+        elif engine == "faiss":
+            print("❌ No se encontró índice FAISS local. Ejecuta 'ingest' o 'sync' primero.")
+            sys.exit(1)
+        else:
+            print("⚠️  No hay índice FAISS local, usando Pinecone como fallback...")
+
+    # Búsqueda con Pinecone
+    api_key = load_env()
     model = SentenceTransformer(EMBEDDING_MODEL)
     q_embedding = model.encode(question).tolist()
 
@@ -276,6 +444,7 @@ def query(question: str, top_k: int = 5):
     results = index.query(vector=q_embedding, top_k=top_k, include_metadata=True)
 
     print(f"\n🔎 Pregunta: {question}")
+    print(f"🌲 Motor: Pinecone (cloud)")
     print(f"📊 Top {top_k} resultados:\n")
     for i, match in enumerate(results["matches"], 1):
         score   = match["score"]
@@ -295,8 +464,11 @@ def query(question: str, top_k: int = 5):
 if __name__ == "__main__":
     if len(sys.argv) < 2:
         print("Uso:")
-        print("  python main.py ingest               → Sube el PDF a Pinecone")
-        print('  python main.py query "tu pregunta"  → Busca en la base de datos')
+        print("  python main.py ingest                              → Sube el PDF a Pinecone + FAISS local")
+        print('  python main.py query "tu pregunta"                 → Busca (FAISS local → Pinecone fallback)')
+        print('  python main.py query "tu pregunta" --engine faiss  → Forzar búsqueda en FAISS')
+        print('  python main.py query "tu pregunta" --engine pinecone → Forzar búsqueda en Pinecone')
+        print("  python main.py sync                                → Sincroniza Pinecone → FAISS local")
         sys.exit(0)
 
     command = sys.argv[1]
@@ -308,9 +480,27 @@ if __name__ == "__main__":
             print("❌ Debes proporcionar una pregunta. Ejemplo:")
             print('   python main.py query "¿Qué saberes básicos hay en matemáticas?"')
             sys.exit(1)
-        question = " ".join(sys.argv[2:])
-        query(question)
+
+        # Detectar flag --engine
+        engine = "auto"
+        args = sys.argv[2:]
+        if "--engine" in args:
+            idx = args.index("--engine")
+            if idx + 1 < len(args):
+                engine = args[idx + 1]
+                if engine not in ("faiss", "pinecone", "auto"):
+                    print(f"❌ Motor desconocido: {engine}. Usa 'faiss', 'pinecone' o 'auto'.")
+                    sys.exit(1)
+                args = args[:idx] + args[idx + 2:]
+            else:
+                print("❌ Debes especificar un motor después de --engine (faiss, pinecone, auto).")
+                sys.exit(1)
+
+        question = " ".join(args)
+        query(question, engine=engine)
+    elif command == "sync":
+        sync()
     else:
         print(f"❌ Comando desconocido: {command}")
-        print("   Usa 'ingest' o 'query'")
+        print("   Usa 'ingest', 'query' o 'sync'")
 
