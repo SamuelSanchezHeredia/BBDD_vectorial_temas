@@ -2,5 +2,8 @@ pinecone>=5.0
 pymupdf
 sentence-transformers
 python-dotenv
+faiss-cpu>=1.7.4
+numpy
+streamlit
 
 
