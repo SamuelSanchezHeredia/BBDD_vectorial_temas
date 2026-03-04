@@ -1,9 +1,9 @@
 pinecone>=5.0
 pymupdf
 sentence-transformers
+huggingface_hub
+requests
 python-dotenv
 faiss-cpu>=1.7.4
 numpy
 streamlit
-
-
